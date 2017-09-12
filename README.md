@@ -1,4 +1,3 @@
 # Experts
 # ZP New Future
-
-Zafer Satılmış
+# Zafer Satılmış
