@@ -267,7 +267,7 @@ bool checkPriceTouchedMAOrder(void)
     //wait firstly open trend order
     if (EN_ORDER_NONE == lastOrderDetails.orderCloseTip)
     {    
-        DBG_MSG(Print("##> checkPriceTouchedMAOrder EN_ORNER_NONE == lastOrderDetails.orderCloseTip"));
+        DBG_MSG(Print("##> checkPriceTouchedMAOrder EN_ORDER_NONE == lastOrderDetails.orderCloseTip"));
         return FALSE;
     }
   
@@ -319,9 +319,7 @@ bool checkPriceTouchedMAOrder(void)
                 }             
             }
         }
-    } 
-
-    Print("checkPriceTouchedMAOrder func: ", retVal);
+    }   
 
     return retVal;
 }
@@ -379,6 +377,7 @@ bool checkPriceTrendOrder(void)
                     {
                         newOrderPriceStation = lastOrderDetails.orderOpenPrice;
                     }
+                    
                     if ((0 != newOrderPriceStation) && (Close[1] <= newOrderPriceStation))
                     {                                                
                         clearGlobalOrderData();  
@@ -399,9 +398,7 @@ bool checkPriceTrendOrder(void)
             if ((nowMAFast > nowMASlow) && (nowMASlow > nowTrendMA))
             {
                 if (TRUE == isNewBar(gBars))
-                {
-                    DBG_MSG(Print("##> checkPriceTrendOrder isNewBar TRUE"));
-                    
+                {                    
                     //check closed bar, it should be under the last order sl price
                     if (EN_ORDER_CLOSE_TP == lastOrderDetails.orderCloseTip)
                     {
@@ -410,9 +407,7 @@ bool checkPriceTrendOrder(void)
                     else if (EN_ORDER_CLOSE_SL == lastOrderDetails.orderCloseTip)
                     {
                         newOrderPriceStation = lastOrderDetails.orderOpenPrice;
-                    }
-
-                    DBG_MSG(Print("##> checkPriceTrendOrder newOrderPriceStation: ", newOrderPriceStation));
+                    }                    
                     
                     if ((0 != newOrderPriceStation) && (Close[1] >= newOrderPriceStation))
                     {
@@ -422,12 +417,6 @@ bool checkPriceTrendOrder(void)
                         retVal = openOrderAndSetStopLoss(OP_BUY, Lots, Ask);
                     }                                        
                 }
-              #ifdef DBG_MODE                
-                else
-                {
-                    Print("##> isNewBar FALSE ");
-                }
-              #endif
             }       
         }
     }
@@ -698,8 +687,9 @@ int trailingStop(void)
     return 0;
 }
 
-void checkForClose()
+int checkForClose(void)
 {
+    int    retVal = FALSE;
 	double nowMASlow;
 	double prevMASlow;
 
@@ -739,6 +729,8 @@ void checkForClose()
 	        	{
 	           		DBG_MSG(Print("##>checkForClose > OrderClose error ",GetLastError()));
 	        	}
+	        	else
+	        	 Print("##>checkForClose > Order closed SUCCESS");
 	     	}
 	     	break;
 	  	}  
@@ -747,14 +739,18 @@ void checkForClose()
 	  	{
 	     	if ((prevMASlow > prevMAFast) && (nowMASlow < nowMAFast))
 	     	{
-	        	if(FALSE == OrderClose(OrderTicket(),OrderLots(),Ask,3,White))
+	        	if(FALSE == OrderClose(OrderTicket(), OrderLots(), Ask, 3, White))
 	        	{
 	           		DBG_MSG(Print("##>checkForClose > OrderClose error ",GetLastError()));
 	        	}
+	        	else
+	        	    Print("##>checkForClose > Order closed SUCCESS");
 	     	}
 	     	break;
 	  	}       
-	}    	
+	} 
+
+	return retVal;
 }
 
 void OnTick(void)
@@ -773,7 +769,7 @@ void OnTick(void)
     else
     {           
         trailingStop();
-        //CheckForClose();
+        checkForClose();
     }
 //---   
 }
