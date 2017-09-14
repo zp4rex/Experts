@@ -26,7 +26,7 @@
 //--- Inputs
 input double Lots              = 0.1;
 input double MaximumRisk       = 0.02;
-input double DecreaseFactor    = 3;
+input bool   ManuelOrder       = FALSE;
 input int    FastMovingPeriod  = 22;
 input int    SlowMovingPeriod  = 50;
 input int    TrendMovingPeriod = 100;
@@ -53,6 +53,7 @@ enum OrderOpenMethod_
     EN_ORDER_METHOD_NEW_TREND = 1,
     EN_ORDER_METHOD_TREND_CONTINUES,
     EN_ORDER_METHOD_TREND_TOUCH_MA,
+    EN_ORDER_METHOD_MANUEL_ORDER,
 
     EN_ORDER_METHOD_NONE,
 }OrderOpenMethod;
@@ -426,7 +427,7 @@ bool checkPriceTrendOrder(void)
      /************************ BUY POSITION ***************************/
     else if (OP_BUY == lastOrderDetails.orderType)
     {
-        //for sell position, price should be under the all trend line.
+        //for buy position, price should be above the all trend line.
         if ((nowMAFast < Close[0]) && (nowMASlow < Close[0]) && (nowTrendMA < Close[0]))
         {        
             if ((nowMAFast > nowMASlow) && (nowMASlow > nowTrendMA))
@@ -462,6 +463,58 @@ bool checkPriceTrendOrder(void)
     return retVal;
 }
 
+bool openManuelOrder(void)
+{
+    bool retVal = FALSE;
+    
+	double  nowMASlow;
+	double  nowMAFast;
+	double  nowTrendMA;
+  
+/*    //go trading only for first tiks of new bar
+    if(Volume[0] > 1)
+    {
+        return;
+    }*/
+   
+	//get Moving Average 
+	nowMAFast   = iMA(NULL, 0, FastMovingPeriod, MAMovingShift, MODE_EMA, PRICE_CLOSE, 0);
+	nowMASlow   = iMA(NULL, 0, SlowMovingPeriod, MAMovingShift, MODE_EMA, PRICE_CLOSE, 0);
+    nowTrendMA  = iMA(NULL, 0, TrendMovingPeriod, MAMovingShift, MODE_EMA, PRICE_CLOSE, 0);  
+
+    //for sell position, price should be under the all trend line.
+    if ((nowMAFast > Close[0]) && (nowMASlow > Close[0]) && (nowTrendMA > Close[0]))
+    {        
+        if ((nowMAFast < nowMASlow) && (nowMASlow < nowTrendMA))
+        {
+            retVal = openOrderAndSetStopLoss(OP_SELL, Lots, Bid);
+            if (TRUE == retVal)
+    	    {
+                lastOrderDetails.orderOpenMethod = EN_ORDER_METHOD_MANUEL_ORDER;
+    	    }
+        }
+    }
+
+    //for buy position, price should be above the all trend line.
+    if ((nowMAFast < Close[0]) && (nowMASlow < Close[0]) && (nowTrendMA < Close[0]))
+    {        
+        if ((nowMAFast > nowMASlow) && (nowMASlow > nowTrendMA))
+        {
+            //clear global data and open new order
+            clearGlobalOrderData();         
+            
+            retVal = openOrderAndSetStopLoss(OP_BUY, Lots, Ask);
+            if (TRUE == retVal)
+			{
+                lastOrderDetails.orderOpenMethod = EN_ORDER_METHOD_MANUEL_ORDER;
+			}        
+        }
+    }
+
+    return retVal;
+
+}
+
 bool checkForOpen(void)
 {
     int retVal = FALSE;
@@ -477,7 +530,12 @@ bool checkForOpen(void)
              * ederse yeni işlem aç */        
             retVal = checkPriceTrendOrder();            
         }
-    }            
+    }   
+
+    if (TRUE == ManuelOrder)
+    {
+        openManuelOrder();
+    }
 
     return retVal;
 }
