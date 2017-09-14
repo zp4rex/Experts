@@ -48,6 +48,15 @@ enum OrderCloseType_
     
 }OrderCloseType;
 
+enum OrderOpenMethod_
+{
+    EN_ORDER_METHOD_NEW_TREND = 1,
+    EN_ORDER_METHOD_TREND_CONTINUES,
+    EN_ORDER_METHOD_TREND_TOUCH_MA,
+
+    EN_ORDER_METHOD_NONE,
+}OrderOpenMethod;
+
 struct lastOrderDetails_
 {
     int      orderType;
@@ -56,6 +65,7 @@ struct lastOrderDetails_
     double   orderClosePrice;
     int      orderCloseTip;
     double   orderLot;
+    int      orderOpenMethod;
 }lastOrderDetails;
  
 int OnInit()
@@ -122,7 +132,8 @@ void clearGlobalOrderData(void)
     lastOrderDetails.orderOpenPrice = 0;
     lastOrderDetails.orderLot = 0;
     lastOrderDetails.orderCloseTip = EN_ORDER_NONE;
-    lastOrderDetails.orderClosePrice = 0;   
+    lastOrderDetails.orderClosePrice = 0; 
+    lastOrderDetails.orderOpenMethod = EN_ORDER_METHOD_NONE;
 }
 
 bool isNewBar(int lastBarsNumber)
@@ -233,9 +244,16 @@ bool checkNewTrendOrder(void)
 		DBG_MSG(Print("##> Sell rule 1 is OK. MA_FAST < MA_SLOW"));
 	  
 		//sell rule 2: current price should be lower than nowMAFast
-		if ((Close[1] < nowMAFast) && (Close[0] < nowMAFast))
-		{            						  
-			retVal = openOrderAndSetStopLoss(OP_SELL, Lots, Bid);			
+		if (/*(Close[1] < nowMAFast) &&*/ (Close[0] < nowMAFast))
+        {            
+            //clear global data and open new order
+            clearGlobalOrderData(); 
+            
+			retVal = openOrderAndSetStopLoss(OP_SELL, Lots, Bid);
+			if (TRUE == retVal)
+			{
+                lastOrderDetails.orderOpenMethod = EN_ORDER_METHOD_NEW_TREND;
+			}
 		}		           
 	}	    
      //-------------------------------- BUY -----------------------------//
@@ -245,9 +263,16 @@ bool checkNewTrendOrder(void)
         DBG_MSG(Print("##> BUY rule 1 is OK. MA_FAST > MA_SLOW"));
            
         //sell rule 2: current price should be bigger than nowMAFast
-        if ((Close[1] > nowMAFast) && (Close[0] > nowMAFast))
-        {              
-            retVal = openOrderAndSetStopLoss(OP_BUY, Lots, Ask);            
+        if (/*(Close[1] > nowMAFast) && */(Close[0] > nowMAFast))
+        {      
+            //clear global data and open new order
+            clearGlobalOrderData();         
+            
+            retVal = openOrderAndSetStopLoss(OP_BUY, Lots, Ask);
+            if (TRUE == retVal)
+			{
+                lastOrderDetails.orderOpenMethod = EN_ORDER_METHOD_NEW_TREND;
+			}
         }               
     }	
 
@@ -267,7 +292,6 @@ bool checkPriceTouchedMAOrder(void)
     //wait firstly open trend order
     if (EN_ORDER_NONE == lastOrderDetails.orderCloseTip)
     {    
-        DBG_MSG(Print("##> checkPriceTouchedMAOrder EN_ORDER_NONE == lastOrderDetails.orderCloseTip"));
         return FALSE;
     }
   
@@ -296,8 +320,12 @@ bool checkPriceTouchedMAOrder(void)
                 {
                     //clear global data and open new order
                     clearGlobalOrderData();  
-                    DBG_MSG(Print("##> checkPriceTouchedMAOrder SELL"));
-                    retVal = openOrderAndSetStopLoss(OP_SELL, Lots, Bid);                                        
+
+                    retVal = openOrderAndSetStopLoss(OP_SELL, Lots, Bid);
+                    if (TRUE == retVal)
+        			{
+                        lastOrderDetails.orderOpenMethod = EN_ORDER_METHOD_TREND_TOUCH_MA;
+        			}
                 }            
             }
         }
@@ -314,8 +342,12 @@ bool checkPriceTouchedMAOrder(void)
                 {
                     //clear global data and open new order
                     clearGlobalOrderData();  
-                    DBG_MSG(Print("##> checkPriceTouchedMAOrder BUY"));
-                    retVal = openOrderAndSetStopLoss(OP_BUY, Lots, Ask);                                        
+                    
+                    retVal = openOrderAndSetStopLoss(OP_BUY, Lots, Ask);
+                    if (TRUE == retVal)
+        			{
+                        lastOrderDetails.orderOpenMethod = EN_ORDER_METHOD_TREND_TOUCH_MA;
+        			}
                 }             
             }
         }
@@ -337,7 +369,6 @@ bool checkPriceTrendOrder(void)
     //wait firstly open trend order
     if (EN_ORDER_NONE == lastOrderDetails.orderCloseTip)
     {       
-        DBG_MSG(Print("##> checkPriceTrendOrder EN_ORNER_NONE == lastOrderDetails.orderCloseTip"));
         return FALSE;
     }
   
@@ -382,8 +413,11 @@ bool checkPriceTrendOrder(void)
                     {                                                
                         clearGlobalOrderData();  
                         
-                        DBG_MSG(Print("##> checkPriceTrendOrder SELL"));
                         retVal = openOrderAndSetStopLoss(OP_SELL, Lots, Bid);
+                        if (TRUE == retVal)
+        			    {
+                            lastOrderDetails.orderOpenMethod = EN_ORDER_METHOD_TREND_CONTINUES;
+        			    }
                     }                                        
                 }        
             }       
@@ -415,6 +449,10 @@ bool checkPriceTrendOrder(void)
 
                         DBG_MSG(Print("##> checkPriceTrendOrder BUY"));
                         retVal = openOrderAndSetStopLoss(OP_BUY, Lots, Ask);
+                        if (TRUE == retVal)
+        			    {
+                            lastOrderDetails.orderOpenMethod = EN_ORDER_METHOD_TREND_CONTINUES;
+        			    }
                     }                                        
                 }
             }       
