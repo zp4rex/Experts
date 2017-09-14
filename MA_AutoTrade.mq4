@@ -24,15 +24,15 @@
 #define AUTO_ORDER_KEY      (6666)
 
 //--- Inputs
-input double Lots              = 0.1;
+input double Lots              = 0.01;
 input double MaximumRisk       = 0.02;
 input bool   ManuelOrder       = FALSE;
 input int    FastMovingPeriod  = 22;
 input int    SlowMovingPeriod  = 50;
 input int    TrendMovingPeriod = 100;
 input int    MAMovingShift     = 0;
-input int    StopLoss = 150;
-input int    ToleranceSL = 50;
+input int    StopLoss = 250;
+input int    ToleranceSL = 100;
 
 double  gStopLossPrice;
 int     gSLCounter; //stop loss counter 
@@ -565,6 +565,11 @@ int trailingStop(void)
 	  	    if (0 == gSLCounter) //işlem açılışında SL ayarlanmadıysa burada kontrol et
 	  	    {
 	  	        gStopLossPrice = calculateStopLossPrice(OrderOpenPrice(), OP_SELL);
+
+                //if session closed and open again we should set first SL
+                //but if first SL exist we can not set same position. we moved litte bit.
+	  	        gStopLossPrice += Point * 5; // 
+	  	         
 		    	if (TRUE == OrderModify(OrderTicket(), OrderOpenPrice(), gStopLossPrice, 0, 0, Green))
 		    	{
                     gSLCounter = 1;
@@ -678,6 +683,11 @@ int trailingStop(void)
 	  	    if (0 == gSLCounter) //işlem açılışında SL ayarlanmadıysa burada kontrol et
 	  	    {
 	  	        gStopLossPrice = calculateStopLossPrice(OrderOpenPrice(), OP_BUY);
+
+	  	        //if session closed and open again we should set first SL
+                //but if first SL exist we can not set same position. we moved litte bit.
+	  	        gStopLossPrice += Point * 5; // 
+	  	        
 		    	if (TRUE == OrderModify(OrderTicket(), OrderOpenPrice(), gStopLossPrice, 0, 0, Green))
 		    	{
 		    	    //load current order details
