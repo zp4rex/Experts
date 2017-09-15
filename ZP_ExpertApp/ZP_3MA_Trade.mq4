@@ -7,6 +7,8 @@
 #property link      "zp.4rex@gmail.com"
 #property version   "1.00"
 #property strict
+
+#include "include/ZP_Trade.mqh"
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -19,7 +21,6 @@
 #else
 	#define DBG_MSG(x)
 #endif
-
 
 #define AUTO_ORDER_KEY      (6666)
 
@@ -89,33 +90,6 @@ void OnDeinit(const int reason)
    	EventKillTimer();      
 }
 
-//+------------------------------------------------------------------+
-//| Expert tick function                                             |
-//+------------------------------------------------------------------+
-
-bool orderOpened(void)
-{
-    bool retVal = FALSE;
-
-    for(int i = 0; i < OrdersTotal(); i++)
-    {
-        if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES) == FALSE)
-        {
-            break;
-        }
-        if((OrderSymbol() == Symbol()) && (OrderMagicNumber() == AUTO_ORDER_KEY))
-        {
-            if((OrderType() == OP_BUY) || (OrderType() == OP_SELL))
-            {
-                retVal = TRUE;                                
-            }
-        }
-    }  
-
-    return retVal;
-
-}
-
 void clearGlobalOrderData(void)
 {
     //clear bars number data
@@ -135,18 +109,6 @@ void clearGlobalOrderData(void)
     lastOrderDetails.orderCloseTip = EN_ORDER_NONE;
     lastOrderDetails.orderClosePrice = 0; 
     lastOrderDetails.orderOpenMethod = EN_ORDER_METHOD_NONE;
-}
-
-bool isNewBar(int lastBarsNumber)
-{    
-    bool retVal = FALSE;
-    
-    if(lastBarsNumber < Bars(_Symbol,_Period))
-    {
-        retVal = TRUE;
-    }
-    
-    return retVal;
 }
 
 double calculateStopLossPrice(double price, int orderType)
@@ -213,7 +175,6 @@ int openOrderAndSetStopLoss(int ordertype, double lot, double orderPrice)
 #endif
 
     return retVal;
-
 }
 
 bool checkNewTrendOrder(void)
@@ -277,8 +238,7 @@ bool checkNewTrendOrder(void)
         }               
     }	
 
-    return retVal;
-    
+    return retVal;    
 }
 
 
@@ -512,7 +472,6 @@ bool openManuelOrder(void)
     }
 
     return retVal;
-
 }
 
 bool checkForOpen(void)
@@ -861,14 +820,14 @@ int checkForClose(void)
 
 void OnTick(void)
 {
-    //--- check for history and trading
+    //check for history and trading
     if((Bars < 100) || (IsTradeAllowed() == FALSE))
     {
         return;
     }
     
     //check open order by current symbol
-    if(orderOpened() == FALSE)
+    if(orderOpened(AUTO_ORDER_KEY) == FALSE)
     { 
         checkForOpen();
     }
@@ -876,8 +835,7 @@ void OnTick(void)
     {           
         trailingStop();
         checkForClose();
-    }
-//---   
+    }   
 }
 
 
@@ -909,8 +867,7 @@ void OnChartEvent(const int id,
                   const long &lparam,
                   const double &dparam,
                   const string &sparam)
-  {
-//---
+{
    
-  }
+}
 //+------------------------------------------------------------------+
